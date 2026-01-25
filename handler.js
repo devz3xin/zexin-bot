@@ -5,25 +5,28 @@ export default async function handler(conn, m) {
     try {
         if (!m.message) return;
 
-        if (m.mtype === 'messageContextInfo') {
-            m.message = m.message.listResponseMessage || m.message.buttonsResponseMessage || m.message;
-            m.mtype = Object.keys(m.message)[0];
-        }
-
         const jid = conn.decodeJid(m.key.remoteJid);
         const isGroup = jid.endsWith('@g.us');
         const sender = conn.decodeJid(m.key.participant || jid);
 
         m.chat = jid;
         m.sender = sender;
+        
+        // Rilevamento dinamico del tipo di messaggio
         m.mtype = Object.keys(m.message)[0];
+        if (m.mtype === 'messageContextInfo') {
+            m.message = m.message.listResponseMessage || m.message.buttonsResponseMessage || m.message;
+            m.mtype = Object.keys(m.message)[0];
+        }
         m.msg = m.message[m.mtype];
 
+        // Estrazione testo da OGNI tipo di bottone
         let text = "";
         if (m.mtype === 'conversation') text = m.message.conversation;
         else if (m.mtype === 'extendedTextMessage') text = m.message.extendedTextMessage.text;
         else if (m.mtype === 'buttonsResponseMessage') text = m.message.buttonsResponseMessage.selectedButtonId;
         else if (m.mtype === 'listResponseMessage') text = m.message.listResponseMessage.singleSelectReply.selectedRowId;
+        else if (m.mtype === 'templateButtonReplyMessage') text = m.message.templateButtonReplyMessage.selectedId;
         else if (m.mtype === 'interactiveResponseMessage') {
             const paramsJson = m.message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson;
             if (paramsJson) {
@@ -35,10 +38,7 @@ export default async function handler(conn, m) {
 
         m.text = text || "";
 
-        if (m.text) {
-            console.log(`\x1b[32m[READ]\x1b[0m Contenuto letto: ${m.text}`);
-        }
-
+        // Database
         global.db.users = global.db.users || {};
         global.db.groups = global.db.groups || {};
 
@@ -81,11 +81,6 @@ export default async function handler(conn, m) {
                 (plugin.command instanceof RegExp ? plugin.command.test(command) : plugin.command === command);
 
             if (isAccept) {
-                if (plugin.owner && !isOwner) { global.dfail('owner', m, conn); continue; }
-                if (plugin.group && !isGroup) { global.dfail('group', m, conn); continue; }
-                if (plugin.admin && !isAdmin) { global.dfail('admin', m, conn); continue; }
-                if (plugin.botAdmin && !isBotAdmin) { global.dfail('botAdmin', m, conn); continue; }
-
                 try {
                     await plugin.call(conn, m, {
                         conn, args, text: fullText, usedPrefix: prefix, command, isOwner, isAdmin, isBotAdmin, participants, groupMetadata

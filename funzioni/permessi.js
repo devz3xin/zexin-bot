@@ -4,35 +4,45 @@ export async function groupUpdate(conn, anu) {
     try {
         const { id, participants, action, author } = anu
         
-        const isRilevaActive = global.db.groups[id]?.rileva || false
-        if (!isRilevaActive) return
+        if (!global.db || !global.db.data) return
+        
+        const chat = global.db.data.chats?.[id] || global.db.groups?.[id]
+        
+        if (!chat || (!chat.rileva && !chat.monitoraggio)) {
+            return
+        }
 
         const user = participants[0]
-        const from = author || anu.author || id
+        const from = author || id 
+        
+        let displayName = action === 'promote' ? `🎋 PROMOZIONE` : `🎐 RETROCESSIONE`
 
         const fakeContact = {
             key: { participant: '0@s.whatsapp.net', remoteJid: 'status@broadcast' },
             message: {
                 contactMessage: {
-                    displayName: await conn.getName(user),
+                    displayName: `${displayName}`,
                     vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;User;;;\nFN:User\nitem1.TEL;waid=${user.split('@')[0]}:${user.split('@')[0]}\nitem1.X-ABLabel:PSTN\nEND:VCARD`
                 }
             }
         }
 
-        let testo = ''
-        if (action === 'promote') {
-            testo = `@${from.split('@')[0]} ha dato i poteri a @${user.split('@')[0]}`
-        } else if (action === 'demote') {
-            testo = `@${from.split('@')[0]} ha tolto i poteri a @${user.split('@')[0]}`
-        }
+        let testo = action === 'promote' 
+            ? `@${user.split('@')[0]} è ora un amministratore.`
+            : `@${user.split('@')[0]} non è più amministratore.`
 
-        if (testo) {
-            await conn.sendMessage(id, { 
-                text: testo, 
-                mentions: [from, user] 
-            }, { quoted: fakeContact })
-        }
+        await conn.sendMessage(id, { 
+            text: testo, 
+            mentions: [from, user],
+            contextInfo: {
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                    newsletterJid: '120363303102327657@newsletter',
+                    newsletterName: 'Zexin Updates 🪷'
+                }
+            }
+        }, { quoted: fakeContact })
+
     } catch (e) {
         console.error(chalk.red('[Errore Funzione Permessi]:'), e)
     }

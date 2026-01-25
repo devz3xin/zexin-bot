@@ -6,13 +6,13 @@ import path from "path";
 import chalk from "chalk";
 import { pathToFileURL } from 'url';
 import handler from "./handler.js";
+import printMessage from './lib/print.js';
+import { groupUpdate } from './funzioni/permessi.js';
 import './config.js';
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState(`./${global.authFile}`);
     const { version } = await fetchLatestBaileysVersion();
-
-    console.log(chalk.cyan.bold('\n₊˚⊹♡ ─── ZEXIN BOT STARTING ─── ♡⊹˚\n'));
 
     const conn = makeWASocket({
         version,
@@ -22,10 +22,19 @@ async function startBot() {
         browser: ['Zexin Bot', 'Safari', '3.0']
     });
 
-    global.db = { users: {}, groups: {}, chats: {}, settings: {} };
+    global.db = { data: { users: {}, groups: {}, chats: {}, settings: {} } };
     if (fs.existsSync('./database.json')) {
-        global.db = JSON.parse(fs.readFileSync('./database.json'));
+        try {
+            const dbRaw = JSON.parse(fs.readFileSync('./database.json'));
+            global.db.data = dbRaw.data || dbRaw;
+        } catch (e) {
+            console.error(chalk.red('[DB ERROR]'), e);
+        }
     }
+
+    setInterval(() => {
+        fs.writeFileSync('./database.json', JSON.stringify(global.db, null, 2));
+    }, 10000);
 
     global.plugins = {};
     const pluginsFolder = path.join(process.cwd(), 'plugins');
@@ -36,10 +45,7 @@ async function startBot() {
             const pluginPath = pathToFileURL(path.join(pluginsFolder, file)).href;
             const plugin = await import(pluginPath);
             global.plugins[file] = plugin.default || plugin;
-            console.log(chalk.green(`[ LOAD ] `) + chalk.white(`Plugin caricato: ${file}`));
-        } catch (e) {
-            console.error(chalk.red(`[ ERROR ] `) + chalk.white(`Errore caricamento ${file}:`), e);
-        }
+        } catch (e) {}
     }
 
     conn.ev.on('creds.update', saveCreds);
@@ -59,39 +65,26 @@ async function startBot() {
             const metadata = await conn.groupMetadata(id).catch(() => ({ subject: id }));
             return metadata.subject || id;
         }
-        return global.db.users[id]?.name || id.split('@')[0];
-    };
-
-    conn.sendList = async (jid, title, text, footer, image, sections, quoted) => {
-        const msg = {
-            interactiveMessage: {
-                header: { title, hasVideoMessage: false },
-                body: { text },
-                footer: { text: footer },
-                nativeFlowMessage: {
-                    buttons: [{
-                        name: "single_select",
-                        buttonParamsJson: JSON.stringify({ title: "Seleziona", sections })
-                    }]
-                }
-            }
-        };
-        if (image) {
-            const media = await conn.prepareWAMessageMedia({ image: { url: image } }, { upload: conn.waUploadToServer });
-            msg.interactiveMessage.header.imageMessage = media.imageMessage;
-        }
-        return await conn.relayMessage(jid, { viewOnceMessage: { message: msg } }, { quoted });
+        return global.db.data.users?.[id]?.name || id.split('@')[0];
     };
 
     conn.ev.on('messages.upsert', async (chatUpdate) => {
         if (!chatUpdate.messages || !chatUpdate.messages[0]) return;
         const m = chatUpdate.messages[0];
+        if (m.key.fromMe) return; 
+        await printMessage(m, conn);
         await handler(conn, m);
+    });
+
+    conn.ev.on('group-participants.update', async (anu) => {
+        await printMessage(anu, conn, true);
+        console.log(JSON.stringify(anu, null, 2));
+        await groupUpdate(conn, anu);
     });
 
     conn.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update;
-        if (connection === 'open') console.log(chalk.green.bold('\n[ SUCCESS ] ') + chalk.white('Bot connesso! 🌸\n'));
+        if (connection === 'open') console.log(chalk.green.bold('\n[ SUCCESS ] ') + chalk.white('Zexin Online 🌸\n'));
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             if (reason !== DisconnectReason.loggedOut) startBot();
@@ -100,5 +93,4 @@ async function startBot() {
 
     return conn;
 }
-
 startBot();

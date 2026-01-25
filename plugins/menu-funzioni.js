@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import fs from 'fs';
 
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin }) => {
   const jid = m.chat;
@@ -8,7 +9,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin }) =
   try {
     groupPfp = await conn.profilePictureUrl(jid, 'image');
   } catch (e) {
-    groupPfp = 'https://i.ibb.co/kVdFLyGL/sam.jpg'; // sam non mi toccare mentre dormo perchè ho messo la tua immagine since non ho fallback e mi scoccio di crearla <3
+    groupPfp = 'https://i.ibb.co/kVdFLyGL/sam.jpg'; 
   }
 
   const fkontak_zexin = {
@@ -65,9 +66,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin }) =
   let isEnable = /attiva|on|1/i.test(command);
   if (/disattiva|off|0/i.test(command)) isEnable = false;
 
-  global.db.groups = global.db.groups || {};
-  global.db.groups[jid] = global.db.groups[jid] || { rileva: false, welcome: true, antilink: true };
-  let settings = global.db.groups[jid];
+  global.db.data.chats[jid] = global.db.data.chats[jid] || { rileva: false, welcome: true, antilink: true };
+  let settings = global.db.data.chats[jid];
 
   const type = args[0].toLowerCase();
   if (!m.isGroup && !isOwner) return;
@@ -76,6 +76,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin }) =
   let featureName = "";
   switch (type) {
     case 'rileva':
+    case 'rivela':
       settings.rileva = isEnable;
       featureName = 'MONITORAGGIO';
       break;
@@ -91,6 +92,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin }) =
       return;
   }
 
+  fs.writeFileSync('./database.json', JSON.stringify(global.db, null, 2));
+
   let confText = `*CONFIGURAZIONE ZEXIN*\n\n` +
                  `*Modulo:* \`${featureName}\`\n` +
                  `*Stato:* ${isEnable ? '🟢 ATTIVATO' : '🔴 DISATTIVATO'}\n` +
@@ -105,7 +108,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin }) =
             body: "Impostazioni salvate",
             mediaType: 1,
             thumbnailUrl: groupPfp,
-            renderLargerThumbnail: true
+            renderLargerThumbnail: false
         }
     }
   }, { quoted: fkontak_zexin });
