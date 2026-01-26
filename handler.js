@@ -12,7 +12,6 @@ export default async function handler(conn, m) {
         m.chat = jid;
         m.sender = sender;
         
-        // Rilevamento dinamico del tipo di messaggio
         m.mtype = Object.keys(m.message)[0];
         if (m.mtype === 'messageContextInfo') {
             m.message = m.message.listResponseMessage || m.message.buttonsResponseMessage || m.message;
@@ -20,7 +19,6 @@ export default async function handler(conn, m) {
         }
         m.msg = m.message[m.mtype];
 
-        // Estrazione testo da OGNI tipo di bottone
         let text = "";
         if (m.mtype === 'conversation') text = m.message.conversation;
         else if (m.mtype === 'extendedTextMessage') text = m.message.extendedTextMessage.text;
@@ -37,13 +35,14 @@ export default async function handler(conn, m) {
         else if (m.msg?.text) text = m.msg.text;
 
         m.text = text || "";
+        m.reply = (text, chatId, options) => conn.sendMessage(chatId || m.chat, { text: text, ...global.newsletter() }, { quoted: m, ...options });
 
-        // Database
         global.db.users = global.db.users || {};
         global.db.groups = global.db.groups || {};
 
-        if (!global.db.users[sender]) global.db.users[sender] = { messages: 0 };
+        if (!global.db.users[sender]) global.db.users[sender] = { messages: 0, warns: {} };
         global.db.users[sender].messages++;
+        if (!global.db.users[sender].warns) global.db.users[sender].warns = {};
 
         if (isGroup) {
             if (!global.db.groups[jid]) {
@@ -51,6 +50,7 @@ export default async function handler(conn, m) {
             }
             global.db.groups[jid].messages++;
         }
+
         writeFileSync('./database.json', JSON.stringify(global.db, null, 2));
 
         await print(m, conn);
@@ -67,8 +67,12 @@ export default async function handler(conn, m) {
         const isOwner = global.owner.some(o => o[0] === sender.split('@')[0]);
         const groupMetadata = isGroup ? await conn.groupMetadata(jid).catch(() => ({})) : {};
         const participants = isGroup ? (groupMetadata.participants || []) : [];
+        
+        const botJid = conn.decodeJid(conn.user.id);
+        
         const user = isGroup ? participants.find(u => conn.decodeJid(u.id) === sender) : {};
-        const bot = isGroup ? participants.find(u => conn.decodeJid(u.id) === conn.decodeJid(conn.user.id)) : {};
+        const bot = isGroup ? participants.find(u => conn.decodeJid(u.id) === botJid) : {};
+        
         const isAdmin = user?.admin === 'admin' || user?.admin === 'superadmin' || isOwner;
         const isBotAdmin = bot?.admin === 'admin' || bot?.admin === 'superadmin';
 
@@ -81,10 +85,32 @@ export default async function handler(conn, m) {
                 (plugin.command instanceof RegExp ? plugin.command.test(command) : plugin.command === command);
 
             if (isAccept) {
+                if (plugin.group && !isGroup) {
+                    global.dfail('group', m, conn);
+                    continue;
+                }
+                
+                if (plugin.admin && !isAdmin) {
+                    global.dfail('admin', m, conn);
+                    continue;
+                }
+
+                if (plugin.botAdmin && !isBotAdmin) {
+                    global.dfail('botAdmin', m, conn);
+                    continue;
+                }
+                
+                if (plugin.owner && !isOwner) {
+                    global.dfail('owner', m, conn);
+                    continue;
+                }
+
                 try {
                     await plugin.call(conn, m, {
                         conn, args, text: fullText, usedPrefix: prefix, command, isOwner, isAdmin, isBotAdmin, participants, groupMetadata
                     });
+                    
+                    writeFileSync('./database.json', JSON.stringify(global.db, null, 2));
                 } catch (e) {
                     console.error(e);
                 }

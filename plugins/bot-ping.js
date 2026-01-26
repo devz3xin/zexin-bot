@@ -18,6 +18,6 @@ const handler = async (m, { conn }) => {
     }, { quoted: m })
 }
 
-handler.command = ['ping', 'p']
+handler.command = ['ping']
 handler.restricted = true
 export default handler

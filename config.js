@@ -21,7 +21,7 @@ global.immagini = [
 
 global.canale = {
     id: '120363418582531215@newsletter',
-    nome: 'ZEXIN SYSTEM 🪷',
+    nome: '⋆. 𐙚˚࿔ zexinbot 𝜗𝜚˚⋆',
     link: 'https://whatsapp.com/channel/0029VbB41Sa1Hsq1JhsC1Z1z'
 }
 
@@ -48,19 +48,34 @@ global.rcanal = (speed = '') => {
     }
 }
 
+global.newsletter = () => {
+    return {
+        contextInfo: {
+            forwardingScore: 999,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+                newsletterJid: global.canale.id,
+                serverMessageId: 1,
+                newsletterName: global.canale.nome
+            },
+        }
+    }
+}
+
 global.dfail = async (type, m, conn) => {
     const msg = {
-        owner: '𐙚 *Solo il proprietario del bot può usare questo comando!*',
-        admin: '🛡️ *Solo gli amministratori del gruppo possono usare questo comando!*',
-        group: '👥 *Questo comando può essere usato solo in chat di gruppo!*',
-        private: '📩 *Questo comando può essere usato solo in chat privata!*',
-        disabled: '🔒 *Questo comando è stato disattivato dall\'owner!*'
+        owner: '`𐔌👑꒱` _*Solo il proprietario del bot può usare questo comando!*_',
+        admin: '`𐔌🛡️ ꒱` _*Solo gli amministratori del gruppo possono usare questo comando!*_',
+        group: '`𐔌👥 ꒱` _*Questo comando può essere usato solo in chat di gruppo!*_',
+        private: '`𐔌📩 ꒱` _*Questo comando può essere usato solo in chat privata!*_',
+        disabled: '`𐔌🔒 ꒱` _*Questo comando è stato disattivato dall\'owner!*_',
+        botAdmin: '`𐔌🤖 ꒱` _*Devo essere amministratore per eseguire questo comando!*_'
     }[type]
 
     if (msg) {
-        return conn.sendMessage(m.key.remoteJid, {
-            text: `${msg}`,
-            ...global.rcanal()
+        return conn.sendMessage(m.chat, {
+            text: msg,
+            ...global.newsletter()
         }, { quoted: m })
     }
 }
