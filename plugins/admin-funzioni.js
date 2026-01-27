@@ -16,7 +16,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner }) => {
     ]
 
     const ownerFeatures = [
-        { key: 'antiprivato', name: 'antiprivato' }
+        { key: 'antiprivato', name: 'antiprivato' },
+        { key: 'anticall', name: 'anticall' }
     ]
 
     if (command === 'funzioni' || !args.length) {

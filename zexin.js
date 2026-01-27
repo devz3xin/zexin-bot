@@ -39,6 +39,22 @@ async function startBot() {
         browser: ['Zexin-Bot', 'Safari', '3.0']
     });
 
+    conn.ev.on('call', async (call) => {
+    if (global.db.data.settings[conn.user.jid]?.anticall) {
+        for (const callData of call) {
+            if (callData.status === 'offer') {
+                const ownerNumber = global.owner[0][0].replace(/[^0-9]/g, '')
+                
+                await conn.rejectCall(callData.id, callData.from)
+                
+                await conn.sendMessage(callData.from, { 
+                    text: `🏮 ╰┈➤ *SISTEMA ANTICALL*\n\nIl mio creatore ha disattivato le chiamate. Non posso rispondere.\n\n🎐 _Se hai bisogno, contatta il proprietario qui: wa.me/${ownerNumber}_`
+                })
+            }
+        }
+    }
+})
+
     conn.decodeJid = (jid) => {
         if (!jid) return jid;
         if (/:\d+@/gi.test(jid)) {
