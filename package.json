@@ -1,6 +1,6 @@
 {
   "name": "zexinbot",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "WhatsApp Bot creato da zero per Zexin",
   "main": "zexin.js",
   "type": "module",
@@ -26,6 +26,7 @@
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.0",
     "pino": "^8.16.1",
+    "@vitalets/google-translate-api": "9.2.1",
     "yargs": "^17.7.2"
   }
 }
