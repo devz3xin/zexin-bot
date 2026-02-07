@@ -1,6 +1,8 @@
 import { writeFileSync } from 'fs';
 import print from './lib/print.js';
 import { prima as antiPrivato } from './funzioni/owner/antiprivato.js'
+import rispondiGemini from './funzioni/owner/rispondi.js'
+import { antilink } from './funzioni/admin/antilink.js'
 
 function extractMessageText(message) {
     if (!message) return '';
@@ -88,7 +90,7 @@ function extractQuotedMessage(conn, m) {
             if (quotedMsg[quotedType]?.url) {
                 return await conn.downloadMediaMessage({
                     key: { 
-                        remoteJid: m.key.remoteJid,
+                        remoteJid: m.key.remoteJid, 
                         id: contextInfo.stanzaId 
                     },
                     message: quotedMsg
@@ -106,6 +108,7 @@ export default async function handler(conn, m) {
         const jid = conn.decodeJid(m.key.remoteJid);
         const isGroup = jid.endsWith('@g.us');
         const sender = conn.decodeJid(m.key.participant || m.key.remoteJid);
+        const botId = conn.decodeJid(conn.user.id); 
 
         m.chat = jid;
         m.sender = sender;
@@ -125,9 +128,7 @@ export default async function handler(conn, m) {
         m.msg = rawMessage[m.mtype];
 
         m.text = extractMessageText(rawMessage);
-        
         m.mentionedJid = extractMentions(rawMessage);
-        
         m.quoted = extractQuotedMessage(conn, m);
 
         m.reply = async (text, chatId, options = {}) => {
@@ -138,10 +139,14 @@ export default async function handler(conn, m) {
             );
         };
 
- 
         global.db.data = global.db.data || { users: {}, groups: {}, chats: {}, settings: {} };
         const users = global.db.data.users;
         const groups = global.db.data.groups;
+        
+        if (!global.db.data.settings[botId]) {
+            global.db.data.settings[botId] = { ai_rispondi: true, anticall: true };
+        }
+        const settings = global.db.data.settings[botId];
 
         const isOwner = global.owner.some(o => o[0] === sender.split('@')[0]);
 
@@ -157,28 +162,14 @@ export default async function handler(conn, m) {
             groups[jid].messages++;
         }
 
-        writeFileSync('./database.json', JSON.stringify(global.db.data, null, 2));
-        await print(m, conn);
-
-        if (m.key.fromMe) return;
-
-        const prefix = global.prefix instanceof RegExp ? 
-            (global.prefix.test(m.text) ? m.text.match(global.prefix)[0] : '.') : 
-            (global.prefix || '.');
-            
-        if (!m.text.startsWith(prefix)) return;
-
-        const args = m.text.slice(prefix.length).trim().split(/ +/);
-        const command = args.shift().toLowerCase();
-        const fullText = args.join(' '); 
-        
+        // --- CALCOLO PERMESSI PER ANTILINK E PLUGIN ---
         const groupMetadata = isGroup ? await conn.groupMetadata(jid).catch(() => ({})) : {};
         const participants = isGroup ? (groupMetadata.participants || []) : [];
         
         const cleanId = (id) => id ? id.split('@')[0].split(':')[0] + '@' + id.split('@')[1] : '';
         const extractNum = (id) => id ? id.split('@')[0].split(':')[0] : '';
 
-        const botJid = cleanId(conn.decodeJid(conn.user.id));
+        const botJid = cleanId(botId);
         const botLid = conn.user.lid ? cleanId(conn.user.lid) : botJid; 
         const senderJid = cleanId(sender);
 
@@ -205,6 +196,37 @@ export default async function handler(conn, m) {
         const isAdmin = (user && user.admin !== null && user.admin !== undefined) || isOwner;
         const isBotAdmin = (bot && bot.admin !== null && bot.admin !== undefined) || false;
 
+        // --- CONTROLLO ANTILINK ---
+        if (isGroup && groups[jid]?.antilink) {
+            const isEliminato = await antilink(m, { 
+                conn, 
+                isAdmin, 
+                isBotAdmin, 
+                users 
+            });
+            if (isEliminato) return;
+        }
+
+        writeFileSync('./database.json', JSON.stringify(global.db.data, null, 2));
+        await print(m, conn);
+
+        if (m.key.fromMe) return;
+
+        if (settings.ai_rispondi) {
+            await rispondiGemini(m, { conn, isOwner });
+        }
+
+        const prefix = global.prefix instanceof RegExp ? 
+            (global.prefix.test(m.text) ? m.text.match(global.prefix)[0] : '.') : 
+            (global.prefix || '.');
+            
+        if (!m.text.startsWith(prefix)) return;
+        await conn.sendPresenceUpdate('composing', m.chat);
+
+        const args = m.text.slice(prefix.length).trim().split(/ +/);
+        const command = args.shift().toLowerCase();
+        const fullText = args.join(' '); 
+        
         for (let name in global.plugins) {
             let plugin = global.plugins[name];
             if (!plugin || plugin.disabled) continue;
@@ -214,7 +236,6 @@ export default async function handler(conn, m) {
                 (plugin.command instanceof RegExp ? plugin.command.test(command) : plugin.command === command);
 
             if (isAccept) {
-                // Controlli permessi
                 if (plugin.group && !isGroup) { 
                     global.dfail('group', m, conn); 
                     continue; 

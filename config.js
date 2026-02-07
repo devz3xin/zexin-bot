@@ -10,13 +10,15 @@ global.prefix = /^[./!#]/
 
 
 /* inserisci le tue API Key al posto di zexin-bot
- per far sii che funzionino i comandi associati */
+ per far si che funzionino i comandi associati */
 
 global.APIKeys = {
-    gemini: 'zexin-bot',
+    gemini: 'AIzaSyBubq2rVXytLCNHS1XfL2KEnVbxFeTowY0',
     removebg: 'zexin-bot',
-    browserless: 'zexin-bot',
-    lastfm: 'zexin-bot'
+    browserless: '2TDow7lMALC87LE35e274ea10fa93aac4a166e010942ab262',
+    lastfm: '2eb5ad17c8803c188abc8e301309875e',
+    chatgpt: 'f930fa4bc0msh24fdb884d5f857dp19dbf6jsn817ac0159619',
+    openrouter: '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'
 }
 
 global.immagini = [
@@ -49,7 +51,7 @@ global.fakecontact = (m) => {
         },
         message: {
             contactMessage: {
-                displayName: `ZEXIN SYSTEM 🛡️`,
+                displayName: `𐙚 𝗭𝗘𝗫𝗜𝗡 𝗕𝗢𝗧`,
                 vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;Zexin;;;\nFN:Zexin\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nEND:VCARD`
             }
         }

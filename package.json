@@ -25,9 +25,8 @@
     "moment-timezone": "^0.5.43",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.0",
-    "node-gtts": "2.0.2", 
     "pino": "^8.16.1",
-    "@vitalets/google-translate-api": "9.2.1",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "youtube-search-api": "2.0.1"
   }
 }
