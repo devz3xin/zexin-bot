@@ -1,5 +1,5 @@
 
-# 🤖 zexin bot .✦ ݁˖
+# 🤖 declare bot .✦ ݁˖
 
 ⤷ ゛Bot whatsapp basato su [@realvare/based](https://npmjs.com/projects/@realvare/based). Base interamente fatta da zero, rapido e facilmente configurabile! Funziona sia su WhatsApp normale, WhatsApp Business (mod incluse) ⋆˚꩜｡
 
@@ -37,7 +37,7 @@ export GYP_DEFINES="android_ndk_path=''"
 cd ~
 ```
 ```bash  
-git clone https://github.com/devz3xin/declare/
+git clone https://github.com/dichiararee/declare/
 ```
 ```bash  
 cd declare
@@ -63,7 +63,7 @@ sudo apt update && apt upgrade -y
 sudo apt install git nodejs ffmpeg imagemagick python pip3
 ```
 ```bash  
-git clone https://github.com/devz3xin/declare
+git clone https://github.com/dichiararee/declare
 ```
 ```bash  
 cd declare
@@ -73,14 +73,14 @@ npm i && npm start
 ```
 ## ❤️ Crediti
 
-- [@devz3xin](https://www.github.com/devz3xin) - creatore della base e dei comandi del bot
+- [@dichiararee](https://www.github.com/dichiararee) - creatore della base e dei comandi del bot
 - [@realvare](https://github.com/realvare) - fork di baileys (based)
 
 ## 👥 Contributori
 
 <p align="center">
-  <a href="https://github.com/devz3xin/declare/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=devz3xin/declare"/>
+  <a href="https://github.com/dichiararee/declare/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=dichiararee/declare"/>
   </a>
 </p>
 
