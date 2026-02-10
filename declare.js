@@ -14,7 +14,7 @@ import { eventsUpdate } from "./funzioni/admin/welcome-addio.js";
 import { checkConfig } from './lib/configInit.js';
 checkConfig(); 
 
-import './config.js';
+import('./config.js');
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState(`./${global.authFile}`);

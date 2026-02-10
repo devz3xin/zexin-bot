@@ -1,0 +1,22 @@
+# Sessione
+declare/
+
+# Configurazione
+config.js
+
+# Database
+database.json
+media/canzoni.json
+media/tmp/
+tmp/
+
+# Moduli e Dipendenze
+node_modules/
+package-lock.json
+
+# Log e file di sistema
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.env
