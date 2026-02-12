@@ -18,27 +18,39 @@ const handler = async (m, { conn, command, text }) => {
     if (!global.db.data.users[who]) global.db.data.users[who] = { warns: {} }
     let user = global.db.data.users[who]
     
-    if (!user.warns) user.warns = {}
-    if (typeof user.warns[m.chat] === 'undefined') user.warns[m.chat] = 0
+    if (!user.warns || Array.isArray(user.warns)) user.warns = {}
+
+    const chatTag = m.chat.split('@')[0]
 
     if (command === 'warn') {
-        user.warns[m.chat] += 1
+        let reason = text ? text.replace(/@\d+/g, '').trim() : 'Nessun motivo specificato'
+        let warnId = Date.now().toString()
+        
+        user.warns[warnId] = {
+            reason: reason,
+            group: m.chat,
+            date: new Date().toLocaleString('it-IT', { timeZone: 'Europe/Rome' }),
+            by: m.sender
+        }
 
-        if (user.warns[m.chat] >= 5) {
-            user.warns[m.chat] = 0 
+        let totalWarns = Object.keys(user.warns).length
+        let groupWarns = Object.values(user.warns).filter(w => w.group === m.chat).length
+
+        if (groupWarns >= 5) {
+            Object.keys(user.warns).forEach(id => {
+                if (user.warns[id].group === m.chat) delete user.warns[id]
+            })
             
             await conn.sendMessage(m.chat, { 
-                text: `🉐 ╰┈➤ Utente *@${who.split('@')[0]}* rimosso per aver raggiunto 5 avvertimenti! 🐉`,
+                text: `🉐 ╰┈➤ Utente *@${who.split('@')[0]}* rimosso per aver raggiunto 5 avvertimenti in questo gruppo! 🐉`,
                 mentions: [who]
             }, { quoted: m })
             
-            await conn.groupParticipantsUpdate(m.chat, [who], 'remove').catch(e => {
-                console.error("Errore Kick:", e)
-            })
+            await conn.groupParticipantsUpdate(m.chat, [who], 'remove').catch(e => console.error("Errore Kick:", e))
             
         } else {
             await conn.sendMessage(m.chat, { 
-                text: `⚠️ ╰┈➤ *@${who.split('@')[0]}* ha ricevuto un avvertimento! *(${user.warns[m.chat]}/5)* 🏮`,
+                text: `⚠️ ╰┈➤ *@${who.split('@')[0]}* ha ricevuto un avvertimento!\n\n┆ \`motivo\` ─ ${reason}\n╰┈➤ \`totali\` ─ *${groupWarns}*/5 🏮`,
                 mentions: [who],
                 contextInfo: {
                     isForwarded: true,
@@ -52,10 +64,16 @@ const handler = async (m, { conn, command, text }) => {
     }
 
     if (command === 'unwarn') {
-        if (user.warns[m.chat] > 0) {
-            user.warns[m.chat] -= 1
+        let userWarnKeys = Object.keys(user.warns).filter(id => user.warns[id].group === m.chat)
+
+        if (userWarnKeys.length > 0) {
+            let lastWarnId = userWarnKeys.sort().pop()
+            delete user.warns[lastWarnId]
+            
+            let groupWarns = Object.values(user.warns).filter(w => w.group === m.chat).length
+
             await conn.sendMessage(m.chat, { 
-                text: `⛩️ ╰┈➤ Avvertimento rimosso a *@${who.split('@')[0]}*! Rimanenti: *(${user.warns[m.chat]}/5)* 🉐`,
+                text: `⛩️ ╰┈➤ Avvertimento rimosso a *@${who.split('@')[0]}*!\n╰┈➤ \`warn rimasti\` ─ *(${groupWarns}/5)* 🉐`,
                 mentions: [who],
                 contextInfo: {
                     isForwarded: true,
@@ -66,7 +84,7 @@ const handler = async (m, { conn, command, text }) => {
                 }
             }, { quoted: m })
         } else {
-            m.reply(`🏮 ╰┈➤ *@${who.split('@')[0]}* non ha avvertimenti in questo gruppo`, null, { mentions: [who] })
+            m.reply(`🏮 ╰┈➤ *@${who.split('@')[0]}* non ha avvertimenti attivi in questo gruppo`, null, { mentions: [who] })
         }
     }
 }
