@@ -10,7 +10,7 @@
 
 ⚠️ ⤷ ゛*Se durante l'avvio il bot si connette con successo ma restituisce errore di Request Time-out ERR: 408, riavviate il bot si connetterà senza problemi.*
 
-1️⃣ -  Tutorial Android
+## 1️⃣ -  Tutorial Android
 
 ⚠️ Requisiti:
 - Android 8.1+ (Escluse le versioni Go)
@@ -52,7 +52,7 @@ yarn install
 ```bash  
 npm start
 ```
-2️⃣ -  Tutorial Linux (Ubuntu/Debian tested)
+## 2️⃣ -  Tutorial Linux (Ubuntu/Debian tested)
 
 ⚠️ *Requisiti:*
 - 3GB di RAM
